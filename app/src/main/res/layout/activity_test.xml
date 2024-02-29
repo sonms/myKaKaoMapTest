@@ -6,4 +6,9 @@
     android:layout_height="match_parent"
     tools:context=".TestActivity">
 
+    <RelativeLayout
+        android:id="@+id/map_mv_mapcontainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
 </androidx.constraintlayout.widget.ConstraintLayout>
