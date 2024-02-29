@@ -22,18 +22,42 @@ class TestActivity : AppCompatActivity() {
     }
 
     private fun initMap() {
-        Log.d("TestActivity", "지도 세팅")
+        Log.d("TestActivity1", "지도 세팅")
         map = MapView(this)
         binding.mapMvMapcontainer.addView(map)
     }
 
+    override fun onStart() {
+        super.onStart()
+        Log.d("TestActivity1", "start")
+    }
 
-
-    override fun onStop() {
-        super.onStop()
+    override fun onPause() {
+        super.onPause()
+        Log.d("TestActivity1", "pause")
         if (map != null) {
             binding.mapMvMapcontainer.removeAllViews()
             binding.mapMvMapcontainer.removeAllViewsInLayout()
+            map = null
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("TestActivity1", "resume")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d("TestActivity1", "onstop")
+        /*if (map != null) {
+            binding.mapMvMapcontainer.removeAllViews()
+            binding.mapMvMapcontainer.removeAllViewsInLayout()
+        }*/
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("TestActivity1", "onDestroy")
     }
 }

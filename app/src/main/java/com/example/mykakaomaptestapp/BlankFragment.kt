@@ -49,7 +49,6 @@ class BlankFragment : Fragment() {
         // Inflate the layout for this fragment
         binding = FragmentBlankBinding.inflate(inflater, container, false)
 
-        initMap()
 
         binding.testTv.setOnClickListener {
             searchKeyword("은행")
@@ -94,37 +93,47 @@ class BlankFragment : Fragment() {
         })
     }
 
-    override fun onStart() {
-        super.onStart()
-        Log.d("Blank", "onStart")
-    }
-
     override fun onPause() {
         super.onPause()
+        Log.d("Blank", "pause")
         if (map != null) {
             binding.mapMvMapcontainer.removeAllViews()
             binding.mapMvMapcontainer.removeAllViewsInLayout()
+            map = null
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (map != null) {
-            binding.mapMvMapcontainer.removeAllViews()
-            binding.mapMvMapcontainer.removeAllViewsInLayout()
-        } else {
+        Log.d("Blank", "resume")
+        /*if (map == null) {
+            initMap()
+        }*/
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Log.d("Blank", "start")
+        if (map == null) {
             initMap()
         }
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("Blank", "destory")
+    }
+    /*override fun onResume() {
+        super.onResume()
         if (map != null) {
             binding.mapMvMapcontainer.removeAllViews()
             binding.mapMvMapcontainer.removeAllViewsInLayout()
-        } else {
-            initMap()
         }
+    }*/
+
+    override fun onStop() {
+        super.onStop()
+        Log.d("Blank", "stop")
     }
 
     companion object {
