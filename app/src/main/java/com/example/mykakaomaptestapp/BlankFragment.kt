@@ -51,7 +51,7 @@ class BlankFragment : Fragment() {
     private val locationRequest: LocationRequest? = null
     private var startPosition: LatLng? = null
     private var labelLayer: LabelLayer? = null
-
+    private var latLngList = ArrayList<LatLng>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -80,6 +80,10 @@ class BlankFragment : Fragment() {
 
     private fun initMap() {
         Log.d("BlankFragment", "지도 세팅")
+        latLngList.apply {
+            add(LatLng.from(37.593875, 127.051833))
+            add(LatLng.from(37.59368107000002, 127.05285294))
+        }
         map = binding.mapView
         //binding.mapMvMapcontainer.addView(map)
     }
@@ -154,6 +158,16 @@ class BlankFragment : Fragment() {
                 trackingManager!!.startTracking(centerLabel)
                 //trackingManager.stopTracking()
                 //startLocationUpdates()
+                for (i in latLngList.indices) {
+                    // 스타일 지정. LabelStyle.from()안에 원하는 이미지 넣기
+                    val style = kakaoMap.labelManager?.addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.map_poi_icon)))
+                    // 라벨 옵션 지정. 위경도와 스타일 넣기
+                    val options = LabelOptions.from(LatLng.from(latLngList[i].latitude, latLngList[i].longitude)).setStyles(style)
+                    // 레이어 가져오기
+                    val layer = kakaoMap.labelManager?.layer
+                    // 레이어에 라벨 추가
+                    layer?.addLabel(options)
+                }
                 kakaoMapValue!!.setOnMapClickListener { kakaoMap, latLng, pointF, poi ->
                     showInfoWindow(position, poi)
                     trackingManager.stopTracking()
