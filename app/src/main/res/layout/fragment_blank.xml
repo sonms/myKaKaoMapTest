@@ -5,12 +5,127 @@
     android:layout_height="match_parent"
     tools:context=".BlankFragment">
 
-
-    <RelativeLayout
-        android:id="@+id/map_mv_mapcontainer"
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        />
+        android:layout_height="match_parent">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_1">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/tv_supported_language"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Supported Languages:"
+                    android:textSize="@dimen/desc_16"
+                    android:textColor="@color/teal_200"/>
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical">
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/ck_poi_visible"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="@dimen/padding_1"
+                        android:checked="true"
+                        android:textSize="@dimen/desc_16"
+                        android:text="Poi Visible"
+                        android:onClick="onCheckBoxClicked"/>
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/ck_poi_clickable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:textSize="@dimen/desc_16"
+                        android:layout_marginRight="@dimen/padding_1"
+                        android:text="Poi Clickable"
+                        android:onClick="onCheckBoxClicked"/>
+                </LinearLayout>
+
+                <TextView
+                    android:text="Poi Scale: "
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/desc_16"
+                    android:textColor="@color/teal_200"/>
+                <RadioGroup
+                    android:orientation="horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="8dp">
+
+                    <RadioButton
+                        android:id="@+id/btn_poi_small"
+                        android:text="Small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:onClick="onScaleClicked"/>
+
+                    <RadioButton
+                        android:id="@+id/btn_poi_regular"
+                        android:text="Regular"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:onClick="onScaleClicked"/>
+
+                    <RadioButton
+                        android:id="@+id/btn_poi_large"
+                        android:text="Large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:onClick="onScaleClicked"/>
+
+                    <RadioButton
+                        android:id="@+id/btn_poi_xlarge"
+                        android:text="XLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:onClick="onScaleClicked"/>
+                </RadioGroup>
+            </LinearLayout>
+
+        </HorizontalScrollView>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/white" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.kakao.vectormap.MapView
+                android:id="@+id/map_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#80B8B6B6"
+                android:padding="@dimen/padding_10"
+                android:text="지도를 클릭해서 확인하세요!"
+                android:textColor="@color/teal_200"
+                android:textSize="@dimen/desc_12" />
+        </RelativeLayout>
+
+    </LinearLayout>
     
     
     <TextView

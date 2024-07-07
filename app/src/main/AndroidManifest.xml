@@ -10,7 +10,7 @@
 
     <application
         android:allowBackup="true"
-        android:usesCleartextTraffic = "true"
+        android:usesCleartextTraffic="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -22,7 +22,9 @@
         <meta-data
             android:name="com.kakao.sdk.AppKey"
             android:value="12236149bbd31cb11ee5867aaa8fb79e"/>
-
+        <meta-data
+            android:name="com.kakao.vectormap.APP_KEY"
+            android:value="12236149bbd31cb11ee5867aaa8fb79e"/>
         <activity
             android:name=".TestActivity"
             android:exported="false" />

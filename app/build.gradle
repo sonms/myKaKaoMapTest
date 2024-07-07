@@ -53,6 +53,7 @@ dependencies {
     api files('libs/libDaumMapAndroid.jar')
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation files('libs/libDaumMapAndroid.jar')
+    implementation 'com.kakao.maps.open:android:2.9.7'
 
     //retrofit2
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'

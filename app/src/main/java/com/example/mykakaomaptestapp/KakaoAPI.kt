@@ -16,4 +16,7 @@ interface KakaoAPI {
         // @Query("category_group_code") category: String
 
     ): Call<ResultSearchKeyword>    // 받아온 정보가 ResultSearchKeyword 클래스의 구조로 담김
+
+
+
 }

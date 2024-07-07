@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.example.mykakaomaptestapp.databinding.ActivityMainBinding
+import com.kakao.vectormap.KakaoMapSdk
 import java.security.MessageDigest
 
 class MainActivity : AppCompatActivity() {
@@ -21,6 +22,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         //getAppKeyHash()
+        KakaoMapSdk.init(this@MainActivity, "12236149bbd31cb11ee5867aaa8fb79e")
+
 
         setFragment(TAG_HOME, BlankFragment())
 
