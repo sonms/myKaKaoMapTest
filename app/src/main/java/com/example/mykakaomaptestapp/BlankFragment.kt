@@ -52,6 +52,7 @@ class BlankFragment : Fragment() {
     private var startPosition: LatLng? = null
     private var labelLayer: LabelLayer? = null
     private var latLngList = ArrayList<LatLng>()
+    private var labelLatLng : LatLng? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -156,9 +157,10 @@ class BlankFragment : Fragment() {
                 )
                 val trackingManager = kakaoMap.trackingManager
                 trackingManager!!.startTracking(centerLabel)
+                trackingManager.stopTracking()
                 //trackingManager.stopTracking()
                 //startLocationUpdates()
-                for (i in latLngList.indices) {
+                /*for (i in latLngList.indices) {
                     // 스타일 지정. LabelStyle.from()안에 원하는 이미지 넣기
                     val style = kakaoMap.labelManager?.addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.map_poi_icon)))
                     // 라벨 옵션 지정. 위경도와 스타일 넣기
@@ -167,51 +169,52 @@ class BlankFragment : Fragment() {
                     val layer = kakaoMap.labelManager?.layer
                     // 레이어에 라벨 추가
                     layer?.addLabel(options)
-                }
-                kakaoMapValue!!.setOnMapClickListener { kakaoMap, latLng, pointF, poi ->
-                    showInfoWindow(position, poi)
-                    trackingManager.stopTracking()
-                    Log.e("kakaoMapValue", "$latLng $pointF ${poi.name}")
-                    // icon 변경
-                    //updateLabel("centerLabel")
-
-                    // 라벨 레이어에 라벨 추가
-                    /*labelLayer!!.addLabel(labelOptions)
-
-                    // 추가된 라벨을 가져오기
-                    val label = labelOptions
-
-                    // 라벨이 추가된 후 tracking 시작
-                    if (label != null) {
-                        trackingManager!!.stopTracking()  // 기존 트래킹 중지
-                        trackingManager.startTracking(label)  // 새 라벨로 트래킹 시작
-                    } else {
-                        Log.e("kakaoMapValue", "Label is null, tracking cannot be started.")
-                    }*/
-                    // 스타일 지정. LabelStyle.from()안에 원하는 이미지 넣기
-                    val style = kakaoMap.labelManager?.addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.map_poi_icon)))
-                    // 라벨 옵션 지정. 위경도와 스타일 넣기
-                    val options = LabelOptions.from(LatLng.from(latLng.latitude, latLng.longitude)).setStyles(style)
-                    // 레이어 가져오기
-                    val layer = kakaoMap.labelManager?.layer
-                    // 레이어에 라벨 추가
-                    layer?.addLabel(options)
-                }
-
-                /*kakaoMapValue!!.setOnLabelClickListener { kakaoMap, labelLayer, label ->
-                    *//*trackingManager.stopTracking()
-                    val labelLayerManager = kakaoMap.labelManager!!.layer
-                    Log.e("labelLayerManager", "true")
-                    centerLabel = layer!!.addLabel(
-                        LabelOptions.from("centerLabel", startPosition)
-                            .setStyles(
-                                LabelStyle.from(R.drawable.map_poi_icon).setAnchorPoint(0.5f, 0.5f)
-                            )
-                            .setRank(1) //우선순위
-                    )
-                    trackingManager!!.startTracking(centerLabel)*//*
-
                 }*/
+                kakaoMapValue!!.setOnMapClickListener { kakaoMap, latLng, pointF, poi ->
+                    // POI 정보창 표시
+                    showInfoWindow(position, poi)
+
+                    // 현재 트래킹 중지
+                    trackingManager.stopTracking()
+
+                    Log.e("kakaoMapValue", "$latLng $pointF ${poi.name}")
+
+                    if (poi.name.isNotEmpty()) {
+                        labelLatLng = LatLng.from(latLng.latitude, latLng.longitude)
+                        Log.e("labelLatLng", "$labelLatLng")
+
+                        // 레이어 가져오기
+                        val labelLayer = kakaoMap.labelManager?.layer
+
+                        // 스타일 지정
+                        val style = kakaoMap.labelManager?.addLabelStyles(
+                            LabelStyles.from(
+                                LabelStyle.from(R.drawable.map_poi_icon).apply {
+                                    setAnchorPoint(0.5f, 0.5f)
+                                    setApplyDpScale(false)
+                                }
+                            )
+                        )
+
+                        // 라벨 옵션 지정
+                        val options = LabelOptions.from(labelLatLng).setStyles(style)
+
+                        // 라벨 추가
+                        val label = labelLayer?.addLabel(options)
+
+                        // 라벨로 트래킹 시작
+                        if (label != null) {
+                            trackingManager.startTracking(label)
+                        } else {
+                            Log.e("kakaoMapValue", "Label is null, tracking cannot be started.")
+                        }
+                    }
+                }
+
+                kakaoMapValue!!.setOnLabelClickListener { kakaoMap, labelLayer, label ->
+                    //trackingManager.stopTracking()
+                    trackingManager.startTracking(label)
+                }
             }
         })
     }
