@@ -1,5 +1,6 @@
 package com.example.mykakaomaptestapp
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,7 +16,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val TAG_HOME = "home_fragment"
-
+    private val TAG_SEARCH = "search_fragment"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -24,11 +25,39 @@ class MainActivity : AppCompatActivity() {
         //getAppKeyHash()
         KakaoMapSdk.init(this@MainActivity, "12236149bbd31cb11ee5867aaa8fb79e")
 
-
-        setFragment(TAG_HOME, BlankFragment())
+        initNavigationBar()
+        setFragment(TAG_HOME, HomeFragment())
 
     }
 
+    private fun initNavigationBar() {
+        binding.bottomNavigationView.
+        setOnItemSelectedListener {item ->
+            when(item.itemId) {
+                R.id.navigation_home -> {
+                    //setToolbarView(TAG_HOME, oldTAG)
+                    //setFragment(TAG_HOME, BlankFragment())
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_content, HomeFragment())
+                        .commit()
+                }
+
+                R.id.navigation_search -> {
+                    //setToolbarView(TAG_HOME, oldTAG)
+                    //setFragment(TAG_SEARCH, BlankFragment())
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_content, BlankFragment())
+                        .commit()
+                }
+
+                else -> {
+
+                }
+
+            }
+            true
+        }
+    }
     /*fun getAppKeyHash() {
         try {
             val info = packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
@@ -53,14 +82,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         val home = manager.findFragmentByTag(TAG_HOME)
+        val search = manager.findFragmentByTag(TAG_SEARCH)
 
         if (home != null) {
             bt.hide(home)
+        }
+        if (search != null) {
+            bt.hide(search)
         }
 
         if (tag == TAG_HOME) {
             if (home != null) {
                 bt.show(home)
+            }
+        } else if (tag == TAG_SEARCH) {
+            if (search != null) {
+                bt.show(search)
             }
         }
 

@@ -9,6 +9,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.mykakaomaptestapp.data.ResultSearchKeyword
 import com.example.mykakaomaptestapp.databinding.FragmentBlankBinding
@@ -20,6 +24,9 @@ import com.kakao.vectormap.mapwidget.component.GuiImage
 import com.kakao.vectormap.mapwidget.component.GuiLayout
 import com.kakao.vectormap.mapwidget.component.GuiText
 import com.kakao.vectormap.mapwidget.component.Orientation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -53,6 +60,13 @@ class BlankFragment : Fragment() {
     private var labelLayer: LabelLayer? = null
     private var latLngList = ArrayList<LatLng>()
     private var labelLatLng : LatLng? = null
+
+    private var pendingData: String? = null
+    private var pendingLatLng: String? = null
+    private var PERMISSIONS = arrayOf(
+        android.Manifest.permission.ACCESS_FINE_LOCATION,
+        android.Manifest.permission.ACCESS_COARSE_LOCATION
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -67,12 +81,12 @@ class BlankFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         binding = FragmentBlankBinding.inflate(inflater, container, false)
-        initMap()
-
+        //initMap()
+        multiplePermissionsLauncher.launch(PERMISSIONS)
         binding.testTv.setOnClickListener {
             searchKeyword("은행")
             val intent = Intent(requireActivity(), TestActivity::class.java)
-            startActivity(intent)
+            requestActivity.launch(intent)
         }
 
         searchKeyword("은행")
@@ -87,6 +101,66 @@ class BlankFragment : Fragment() {
         }
         map = binding.mapView
         //binding.mapMvMapcontainer.addView(map)
+    }
+
+    private val requestActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == AppCompatActivity.RESULT_OK) {
+            val data = result.data?.getStringExtra("location") as String?
+            val latLng = result.data?.getStringExtra("latLng")
+            val flag = result.data?.getIntExtra("flag", -1)
+            if (flag == 100) {
+                Log.d("requestActivity couroutine", "initMapView")
+                if (data != null && latLng != null) {
+                    //loadNearbyPostData(data, latLng)
+                    pendingData = data
+                    pendingLatLng = latLng
+                }
+                /*sharedViewModel.selectedLocation.observe(viewLifecycleOwner) { location ->
+                    Log.d("DEBUG", "LiveData observed: $location")
+                    location?.let {
+
+                        loadNearbyPostData(location.postId)
+
+                    }
+                }*/
+            }
+        }
+    }
+
+    private fun initializeMapIfNeeded() {
+        if (map == null) {
+            try {
+                Log.e("SearchFragment", "try")
+                initMap()
+            } catch (re: RuntimeException) {
+                Log.e("SearchFragment", re.toString())
+            }
+        } else {
+            Log.e("SearchFragment", "map is not null")
+            map = null
+            initMap()
+        }
+    }
+
+    private fun requestDeniedPermissionsAgain(deniedPermissions: Set<String>) {
+        // 권한 재요청을 위한 대화상자 또는 로직 구현
+        AlertDialog.Builder(requireContext())
+            .setTitle("권한 요청")
+            .setMessage("이 기능을 사용하려면 권한이 필요합니다. 권한을 승인하시겠습니까?")
+            .setPositiveButton("예") { _, _ ->
+                multiplePermissionsLauncher.launch(deniedPermissions.toTypedArray())
+            }
+            .setNegativeButton("아니오") { dialog, _ ->
+                dialog.dismiss()
+                handlePermissionDenied()
+            }
+            .create()
+            .show()
+    }
+    private fun handlePermissionDenied() {
+        // 권한이 거부된 경우 지도 뷰를 숨기거나 처리하는 코드 추가
+        binding.mapView.visibility = View.GONE
+        Toast.makeText(requireContext(), "권한이 거부되어 지도를 표시할 수 없습니다.", Toast.LENGTH_SHORT).show()
     }
 
     // 키워드 검색 함수
@@ -115,10 +189,75 @@ class BlankFragment : Fragment() {
             }
         })
     }
+    private fun startMapLifeCycle() {
+        map?.start(object : MapLifeCycleCallback() {
+            override fun onMapDestroy() {
+                Log.e("BlankFragment", "onMapDestroy")
+            }
+
+            override fun onMapError(error: Exception?) {
+                Log.e("BlankFragment", "onMapError", error)
+            }
+
+        }, object : KakaoMapReadyCallback() {
+            override fun getPosition(): LatLng {
+                return super.getPosition()
+            }
+
+            override fun getZoomLevel(): Int {
+                return 17
+            }
+
+            override fun onMapReady(kakaoMap: KakaoMap) {
+                Log.e("BlankFragment", "onMapReady")
+                kakaoMapValue = kakaoMap
+                labelLayer = kakaoMap.labelManager!!.layer
+                val trackingManager = kakaoMap.trackingManager
+
+                if (pendingData != null && pendingLatLng != null) {
+                    val target = pendingLatLng!!.split(" ").map { it.toDouble() }
+                    startPosition = LatLng.from(target.first(), target.last())
+                    centerLabel = labelLayer!!.addLabel(
+                        LabelOptions.from("centerLabel", startPosition)
+                            .setStyles(LabelStyle.from(R.drawable.map_poi_icon).setAnchorPoint(0.5f, 0.5f))
+                            .setRank(1)
+                    )
+
+                    trackingManager!!.startTracking(centerLabel)
+                }
+
+                kakaoMapValue!!.setOnMapClickListener { _, latLng, _, poi ->
+                    showInfoWindow(position, poi)
+                    trackingManager?.stopTracking()
+
+                    if (poi.name.isNotEmpty()) {
+                        labelLatLng = LatLng.from(latLng.latitude, latLng.longitude)
+                        val style = kakaoMap.labelManager?.addLabelStyles(
+                            LabelStyles.from(
+                                LabelStyle.from(R.drawable.map_poi_icon).apply {
+                                    setAnchorPoint(0.5f, 0.5f)
+                                    isApplyDpScale = false
+                                }
+                            )
+                        )
+                        val options = LabelOptions.from(labelLatLng).setStyles(style).setRank(1)
+                        val label = labelLayer?.addLabel(options)
+                        label?.let { trackingManager?.startTracking(it) }
+                    }
+                }
+
+                kakaoMapValue!!.setOnLabelClickListener { _, _, label ->
+                    trackingManager?.startTracking(label)
+                }
+            }
+        })
+    }
 
     override fun onResume() {
         super.onResume()
-        map?.start(object : MapLifeCycleCallback() {
+        map?.resume()
+        startMapLifeCycle()
+       /* map?.start(object : MapLifeCycleCallback() {
             override fun onMapDestroy() {
                 Log.e("BlankFragment", "onMapDestroy")
             }
@@ -142,25 +281,32 @@ class BlankFragment : Fragment() {
                 Log.e("BlankFragment", "onMapReady")
                 kakaoMapValue = kakaoMap
                 labelLayer = kakaoMap.labelManager!!.layer
-
-// 현재 위치를 나타낼 label를 그리기 위해 kakaomap 인스턴스에서 LabelLayer를 가져옵니다.
-                val layer = kakaoMap.labelManager!!.layer
-                startPosition = LatLng.from(37.5946, 127.0527)
-                // LabelLayer에 라벨을 추가합니다. 카카오 지도 API 공식 문서에 지도에서 사용하는 이미지는 drawable-nodpi/ 에 넣는 것을 권장합니다.
-                //Label 을 생성하기 위해 초기화 값을 설정하는 클래스.
-                centerLabel = layer!!.addLabel(
-                    LabelOptions.from("centerLabel", startPosition)
-                        .setStyles(
-                            LabelStyle.from(R.drawable.map_poi_icon).setAnchorPoint(0.5f, 0.5f)
-                        )
-                        .setRank(1) //우선순위
-                )
                 val trackingManager = kakaoMap.trackingManager
-                trackingManager!!.startTracking(centerLabel)
-                trackingManager.stopTracking()
+
+                if (pendingData != null && pendingLatLng != null) {
+                    Log.e("pendingTest", pendingData.toString())
+                    Log.e("pendingTest", pendingLatLng.toString())
+                    // 현재 위치를 나타낼 label를 그리기 위해 kakaomap 인스턴스에서 LabelLayer를 가져옵니다.
+                    val layer = kakaoMap.labelManager!!.layer
+                    val target = pendingLatLng!!.split(" ").map { it.toDouble() }
+                    Log.e("pedingTest", target.toString())
+                    startPosition = LatLng.from(target.first(), target.last())
+                    // LabelLayer에 라벨을 추가합니다. 카카오 지도 API 공식 문서에 지도에서 사용하는 이미지는 drawable-nodpi/ 에 넣는 것을 권장합니다.
+                    //Label 을 생성하기 위해 초기화 값을 설정하는 클래스.
+                    centerLabel = layer!!.addLabel(
+                        LabelOptions.from("centerLabel", startPosition)
+                            .setStyles(
+                                LabelStyle.from(R.drawable.map_poi_icon).setAnchorPoint(0.5f, 0.5f)
+                            )
+                            .setRank(1) //우선순위
+                    )
+
+                    trackingManager!!.startTracking(centerLabel)
+                    //trackingManager.stopTracking()
+                }
                 //trackingManager.stopTracking()
                 //startLocationUpdates()
-                /*for (i in latLngList.indices) {
+                *//*for (i in latLngList.indices) {
                     // 스타일 지정. LabelStyle.from()안에 원하는 이미지 넣기
                     val style = kakaoMap.labelManager?.addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.map_poi_icon)))
                     // 라벨 옵션 지정. 위경도와 스타일 넣기
@@ -169,13 +315,13 @@ class BlankFragment : Fragment() {
                     val layer = kakaoMap.labelManager?.layer
                     // 레이어에 라벨 추가
                     layer?.addLabel(options)
-                }*/
+                }*//*
                 kakaoMapValue!!.setOnMapClickListener { kakaoMap, latLng, pointF, poi ->
                     // POI 정보창 표시
                     showInfoWindow(position, poi)
 
                     // 현재 트래킹 중지
-                    trackingManager.stopTracking()
+                    trackingManager?.stopTracking()
 
                     Log.e("kakaoMapValue", "$latLng $pointF ${poi.name}")
 
@@ -191,20 +337,20 @@ class BlankFragment : Fragment() {
                             LabelStyles.from(
                                 LabelStyle.from(R.drawable.map_poi_icon).apply {
                                     setAnchorPoint(0.5f, 0.5f)
-                                    setApplyDpScale(false)
+                                    isApplyDpScale = false
                                 }
                             )
                         )
 
                         // 라벨 옵션 지정
-                        val options = LabelOptions.from(labelLatLng).setStyles(style)
+                        val options = LabelOptions.from(labelLatLng).setStyles(style).setRank(1)
 
                         // 라벨 추가
                         val label = labelLayer?.addLabel(options)
 
                         // 라벨로 트래킹 시작
                         if (label != null) {
-                            trackingManager.startTracking(label)
+                            trackingManager?.startTracking(label)
                         } else {
                             Log.e("kakaoMapValue", "Label is null, tracking cannot be started.")
                         }
@@ -213,10 +359,10 @@ class BlankFragment : Fragment() {
 
                 kakaoMapValue!!.setOnLabelClickListener { kakaoMap, labelLayer, label ->
                     //trackingManager.stopTracking()
-                    trackingManager.startTracking(label)
+                    trackingManager?.startTracking(label)
                 }
             }
-        })
+        })*/
     }
 /*
     private fun setupMapView() {
@@ -288,27 +434,39 @@ private fun updateLabel(labelId: String) { //poi icon변경
             R.id.btn_poi_xlarge -> kakaoMapValue!!.setPoiScale(PoiScale.XLARGE)
         }
     }
+
+    private val multiplePermissionsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val deniedPermissions = permissions.filter { !it.value }.keys
+            val grantedPermissions = permissions.filter { it.value }.keys
+
+            if (grantedPermissions.isNotEmpty()) {
+                Toast.makeText(requireContext(), "권한이 승인되었습니다.", Toast.LENGTH_SHORT).show()
+                initializeMapIfNeeded()
+            }
+
+            if (deniedPermissions.isNotEmpty()) {
+                Toast.makeText(requireContext(), "${deniedPermissions.joinToString(", ")} 권한이 거부되었습니다.", Toast.LENGTH_SHORT).show()
+                // 권한 재요청 코드
+                requestDeniedPermissionsAgain(deniedPermissions)
+            }
+        }
     override fun onPause() {
         super.onPause()
         Log.d("Blank", "pause")
-        if (map != null) {
-            map?.removeAllViews()
-            map?.removeAllViewsInLayout()
-            map = null
-        }
+        map?.pause()
     }
 
     override fun onStart() {
         super.onStart()
         Log.d("Blank", "start")
-        if (map == null) {
-            initMap()
-        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d("Blank", "destory")
+        map?.finish()
+        map = null
     }
     /*override fun onResume() {
         super.onResume()
@@ -321,6 +479,15 @@ private fun updateLabel(labelId: String) { //poi icon변경
     override fun onStop() {
         super.onStop()
         Log.d("Blank", "stop")
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        if (savedInstanceState == null) {
+            initMap()
+        } else {
+            map?.resume()
+        }
     }
 
     companion object {
